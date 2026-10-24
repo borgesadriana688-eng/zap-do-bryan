@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Zap do Bryan</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+<style>
+  :root {
+    --bg: #0b141a;
+    --panel: #111b21;
+    --panel2: #202c33;
+    --accent: #00a884;
+    --accent2: #005c4b;
+    --text: #e9edef;
+    --muted: #8696a0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); }
+  #app { display: flex; flex-direction: column; height: 100vh; max-width: 640px; margin: 0 auto; }
+
+  /* Tela de login */
+  #login-screen {
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; gap: 16px; padding: 24px;
+    background: var(--panel);
+  }
+  #login-screen .logo { font-size: 56px; }
+  #login-screen h1 { font-size: 22px; font-weight: 600; }
+  #login-screen p { color: var(--muted); font-size: 13px; text-align: center; }
+  #login-screen input {
+    width: 100%; max-width: 320px; padding: 14px 16px; border-radius: 10px;
+    border: 1px solid #2a3942; background: var(--panel2); color: var(--text);
+    font-size: 15px; outline: none; text-align: center;
+  }
+  #login-screen input:focus { border-color: var(--accent); }
+  #login-screen button {
+    width: 100%; max-width: 320px; padding: 14px; border: none; border-radius: 10px;
+    background: var(--accent); color: #062b23; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  #login-screen button:active { background: var(--accent2); color: var(--text); }
+
+  /* Chat */
+  #chat-screen { flex: 1; display: none; flex-direction: column; min-height: 0; }
+  #chat-header {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    background: var(--panel2); border-bottom: 1px solid #2a3942;
+  }
+  #chat-header .avatar {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  #chat-header .info { flex: 1; min-width: 0; }
+  #chat-header .info b { display: block; font-size: 15px; }
+  #chat-header .info small { color: var(--muted); font-size: 12px; }
+  #room-select {
+    background: transparent; border: none; color: var(--accent); font-size: 12px;
+    cursor: pointer; padding: 4px; text-align: right;
+  }
+  #room-select option { background: var(--panel2); color: var(--text); }
+
+  #messages { flex: 1; overflow-y: auto; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .day-sep { text-align: center; margin: 12px 0 4px; }
+  .day-sep span { background: var(--panel2); color: var(--muted); font-size: 11px; padding: 4px 10px; border-radius: 8px; }
+
+  .msg {
+    max-width: 78%; padding: 7px 10px 5px; border-radius: 10px; position: relative;
+    font-size: 14.5px; line-height: 1.35; word-wrap: break-word;
+    margin-top: 3px; box-shadow: 0 1px 1px rgba(0,0,0,.25);
+  }
+  .msg .name { color: #53bdeb; font-size: 12.5px; font-weight: 600; margin-bottom: 1px; }
+  .msg .meta { font-size: 10.5px; color: rgba(233,237,239,.55); text-align: right; margin-top: 2px; }
+  .msg.them { align-self: flex-start; background: var(--panel2); border-top-left-radius: 2px; }
+  .msg.me   { align-self: flex-end; background: var(--accent2); border-top-right-radius: 2px; }
+  .msg.me .meta { color: rgba(233,237,239,.65); }
+
+  #composer {
+    display: flex; gap: 8px; padding: 8px 12px 12px; background: var(--panel2);
+    align-items: flex-end;
+  }
+  #composer textarea {
+    flex: 1; resize: none; border: none; outline: none; background: var(--panel);
+    color: var(--text); border-radius: 12px; padding: 12px 14px; font-size: 15px;
+    max-height: 110px; line-height: 1.3;
+  }
+  #send-btn {
+    width: 46px; height: 46px; border-radius: 50%; border: none; background: var(--accent);
+    color: #062b23; font-size: 20px; cursor: pointer; flex-shrink: 0;
+  }
+  #send-btn:active { background: var(--accent2); color: var(--text); }
+  #conn-dot { width: 8px; height: 8px; border-radius: 50%; background: #f15c6d; }
+  #conn-dot.on { background: #4ade80; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="logo">💬</div>
+    <h1>Zap do Bryan</h1>
+    <p>Digite seu nome pra entrar no chat</p>
+    <input id="name-input" maxlength="20" placeholder="Seu nome" autocomplete="off">
+    <button id="enter-btn">Entrar</button>
+    <p id="login-error" class="hidden" style="color:#f15c6d"></p>
+  </div>
+
+  <!-- CHAT -->
+  <div id="chat-screen">
+    <div id="chat-header">
+      <div class="avatar">💬</div>
+      <div class="info">
+        <b>Zap do Bryan</b>
+        <small id="conn-status"><span id="conn-dot"></span> conectando…</small>
+      </div>
+      <select id="room-select" title="Trocar de grupo">
+        <option value="geral"># Geral</option>
+        <option value="jogos"># Jogos</option>
+        <option value="rp"># RP</option>
+      </select>
+    </div>
+    <div id="messages"></div>
+    <div id="composer">
+      <textarea id="msg-input" rows="1" placeholder="Mensagem"></textarea>
+      <button id="send-btn">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     SUPABASE - COLOQUE SUAS CHAVES AQUI (veja o README)
+     ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL  = "COLE_A_URL_DO_SEU_SUPABASE_AQUI";
+const SUPABASE_ANON = "COLE_A_CHAVE_ANON_AQUI";
+
+let sb = null, me = null, room = "geral", lastDateKey = "";
+const $ = id => document.getElementById(id);
+
+/* ---------- LOGIN ---------- */
+$("enter-btn").onclick = doLogin;
+$("name-input").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+
+function doLogin() {
+  const name = $("name-input").value.trim();
+  if (name.length < 2) { $("login-error").textContent = "Nome muito curto 🙂"; $("login-error").classList.remove("hidden"); return; }
+  if (SUPABASE_URL.startsWith("COLE_")) { $("login-error").textContent = "Configura as chaves do Supabase no arquivo index.html primeiro (veja o README)."; $("login-error").classList.remove("hidden"); return; }
+
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  me = name;
+  localStorage.setItem("zdb_user", name);
+  $("login-screen").classList.add("hidden");
+  $("chat-screen").style.display = "flex";
+  loadRoom(room);
+}
+
+/* ---------- SALAS ---------- */
+$("room-select").onchange = e => { room = e.target.value; loadRoom(room); };
+
+async function loadRoom(r) {
+  lastDateKey = "";
+  const box = $("messages");
+  box.innerHTML = "";
+  setConn("carregando…", false);
+
+  // histórico das últimas 100 mensagens
+  const { data, error } = await sb
+    .from("messages")
+    .select("name, text, created_at")
+    .eq("room", r)
+    .order("created_at", { ascending: true })
+    .limit(100);
+
+  if (error) {
+    box.innerHTML = `<div class="day-sep"><span>⚠️ ${error.message}</span></div>`;
+    setConn("erro", false);
+    return;
+  }
+  (data || []).forEach(m => render(m.name, m.text, new Date(m.created_at)));
+  box.scrollTop = box.scrollHeight;
+  setConn("conectado", true);
+
+  // tempo real
+  sb.channel("room-" + r)
+    .on("postgres_changes",
+      { event: "INSERT", schema: "public", table: "messages", filter: "room=eq." + r },
+      payload => {
+        const m = payload.new;
+        render(m.name, m.text, new Date(m.created_at));
+        $("messages").scrollTop = $("messages").scrollHeight;
+      })
+    .subscribe(status => { if (status === "SUBSCRIBED") setConn("conectado", true); });
+
+  // lembra da sala anterior pra não ouvir 2 canais
+  if (window._lastChan && window._lastChan !== "room-" + r) sb.removeChannel(sb.channel(window._lastChan));
+  window._lastChan = "room-" + r;
+}
+
+function setConn(txt, on) {
+  $("conn-status").innerHTML = `<span id="conn-dot" class="${on ? "on" : ""}"></span> ${txt}`;
+}
+
+/* ---------- RENDER ---------- */
+function render(name, text, when) {
+  const dateKey = when.toDateString();
+  if (dateKey !== lastDateKey) {
+    lastDateKey = dateKey;
+    const sep = document.createElement("div");
+    sep.className = "day-sep";
+    sep.innerHTML = `<span>${dateKey === new Date().toDateString() ? "HOJE" : when.toLocaleDateString("pt-BR")}</span>`;
+    $("messages").appendChild(sep);
+  }
+  const mine = name === me;
+  const div = document.createElement("div");
+  div.className = "msg " + (mine ? "me" : "them");
+  const hh = String(when.getHours()).padStart(2, "0");
+  const mm = String(when.getMinutes()).padStart(2, "0");
+  const safeName = name.replace(/[<>&"]/g, "");
+  const safeText = text.replace(/[<>&"]/g, "");
+  div.innerHTML = (mine ? "" : `<div class="name">${safeName}</div>`) + `${safeText.replace(/\n/g, "<br>")}<div class="meta">${hh}:${mm}</div>`;
+  $("messages").appendChild(div);
+}
+
+/* ---------- ENVIAR ---------- */
+async function send() {
+  const input = $("msg-input");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  input.style.height = "auto";
+  await sb.from("messages").insert({ room, name: me, text });
+}
+$("send-btn").onclick = send;
+$("msg-input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+});
+$("msg-input").addEventListener("input", function () {
+  this.style.height = "auto";
+  this.style.height = Math.min(this.scrollHeight, 110) + "px";
+});
+
+/* auto-login se já tinha nome salvo */
+const saved = localStorage.getItem("zdb_user");
+if (saved) { $("name-input").value = saved; }
+</script>
+</body>
+</html>

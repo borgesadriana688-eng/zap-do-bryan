@@ -34,6 +34,9 @@ create policy "escrita publica"
   on messages for insert
   to anon
   with check (true);
+
+-- ativar TEMPO REAL (mensagens chegarem na hora, sem recarregar)
+alter publication supabase_realtime add table messages;
 ```
 
 5. No menu: **Project Settings (⚙️) → API**. Você vai ver:
